@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Habit Tracker - Agenda</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="container py-4">
+    <h1>📝 Habit Tracker - Agenda for {{ date }}</h1>
+    <form class="mb-3" method="get" action="/agenda">
+        <input type="date" name="date" value="{{ date }}">
+        <button type="submit" class="btn btn-secondary">Change Date</button>
+        <a href="/" class="btn btn-link">Back to Setup</a>
+    </form>
+    <table class="table table-bordered">
+        <thead><tr><th>Habit</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody>
+        {% for name, done in agenda %}
+            <tr>
+                <td>{{ name }}</td>
+                <td id="status-{{ name }}" class="fw-bold {{ 'text-bg-success' if done else 'text-bg-danger' }}">{{ 'Done' if done else 'Not Done' }}</td>
+                <td>
+                    <button class="btn btn-sm btn-toggle" data-habit="{{ name }}" data-done="{{ '1' if done else '0' }}">
+                        Mark as {{ 'Not Done' if done else 'Done' }}
+                    </button>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    <script>
+    document.querySelectorAll('.btn-toggle').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const habit = this.getAttribute('data-habit');
+            const done = this.getAttribute('data-done') === '1';
+            fetch('/mark', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({habit, date: '{{ date }}', done: !done})
+            }).then(r => r.json()).then(data => {
+                if(data.success) location.reload();
+            });
+        });
+    });
+    </script>
+</body>
+</html>

@@ -1,0 +1,2 @@
+App Summary:
+This Habit Tracker is a web application that allows users to create, view, and manage daily, weekly, and custom-scheduled habits. Users can add new habits, view their agenda for any day, and mark habits as done or not done. The app stores all data in a JSON file and provides a simple, interactive web interface for habit management.

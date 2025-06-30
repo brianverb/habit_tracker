@@ -1,0 +1,4 @@
+- Created project folder 'habit_tracker' on Desktop
+- Added README.md with project description and instructions
+- Added requirements.txt with dependencies (gradio, pandas)
+- Added app.py with Gradio web app for habit tracking
