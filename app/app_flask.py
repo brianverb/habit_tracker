@@ -15,12 +15,15 @@ app = Flask(__name__, template_folder='templates', static_folder='static')
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'dev_secret')
 
 def get_current_user():
+    """Return the username of the currently logged-in user from the session, or None if not logged in."""
     return session.get('username')
 
 def get_user_data_path(username):
+    """Return the path to the user's data.json file."""
     return f"user_data/{username}/data.json"
 
 def get_user_chat_path(username):
+    """Return the path to the user's chat.json file, creating the directory if needed."""
     user_dir = f"user_data/{username}"
     os.makedirs(user_dir, exist_ok=True)
     return f"{user_dir}/chat.json"
@@ -55,6 +58,7 @@ def agenda():
 
 @app.route('/mark', methods=['POST'])
 def mark():
+    """API endpoint to mark a habit as done or not done for a specific date."""
     if not get_current_user():
         return jsonify({'success': False, 'error': 'Not logged in'})
     habit = request.json['habit']
@@ -101,6 +105,7 @@ def calendar_view():
 
 @app.route('/edit_habit', methods=['POST'])
 def edit_habit_route():
+    """API endpoint to edit an existing habit's details."""
     if not get_current_user():
         return jsonify({'success': False, 'error': 'Not logged in'})
     data = request.get_json()
@@ -113,6 +118,7 @@ def edit_habit_route():
 
 @app.route('/remove_habit', methods=['POST'])
 def remove_habit_route():
+    """API endpoint to remove a habit for the current user."""
     if not get_current_user():
         return jsonify({'success': False, 'error': 'Not logged in'})
     data = request.get_json()
@@ -120,9 +126,9 @@ def remove_habit_route():
     remove_habit(name, username=get_current_user())
     return jsonify({'success': True})
 
-
 @app.route('/clear_chat_history', methods=['POST'])
 def clear_chat_history():
+    """API endpoint to clear the current user's chat history."""
     if not get_current_user():
         return jsonify({'success': False})
     chat_path = get_user_chat_path(get_current_user())
@@ -135,12 +141,14 @@ def clear_chat_history():
 
 @app.route('/get_habits', methods=['GET'])
 def get_habits_api():
+    """API endpoint to get the current user's habits as JSON."""
     if not get_current_user():
         return jsonify({'habits': []})
     return jsonify({'habits': get_habits(get_current_user())})
 
 @app.route('/get_chat_history', methods=['GET'])
 def get_chat_history():
+    """API endpoint to get the current user's chat history as JSON."""
     if not get_current_user():
         return jsonify({'history': []})
     chat_path = get_user_chat_path(get_current_user())
@@ -155,6 +163,7 @@ def get_chat_history():
 
 @app.route('/ai_planning', methods=['POST'])
 def ai_planning():
+    """AI endpoint: Handles user chat, returns AI response, and applies extracted habit actions (add, edit, remove, remove_all)."""
     if not get_current_user():
         return jsonify({'success': False, 'status': 'Not logged in'})
     user_message = request.json['message']
@@ -273,6 +282,7 @@ def ai_planning():
     return jsonify({"success": True, "response": answer + ("<br>" + ai_msg if results else "")})
 
 def save_chat_history(chat_path, chat_history):
+    """Save the last 100 chat messages to the user's chat file."""
     try:
         with open(chat_path, 'w') as f:
             json.dump(chat_history[-100:], f, indent=2)  # Keep last 100 messages

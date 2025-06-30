@@ -8,6 +8,7 @@ import calendar
 import os
 
 def get_data_file(username=None):
+    """Return the path to the user's data file, creating the directory if needed. Defaults to global data if username is None."""
     if username:
         user_dir = f"user_data/{username}"
         os.makedirs(user_dir, exist_ok=True)
@@ -15,6 +16,7 @@ def get_data_file(username=None):
     return "habits_data.json"
 
 def load_data(username=None):
+    """Load habit and record data for the given user. Returns default structure if file does not exist."""
     data_file = get_data_file(username)
     if not os.path.exists(data_file):
         return {"habits": [], "records": {}}
@@ -22,11 +24,13 @@ def load_data(username=None):
         return json.load(f)
 
 def save_data(data, username=None):
+    """Save the given data dict to the user's data file."""
     data_file = get_data_file(username)
     with open(data_file, "w") as f:
         json.dump(data, f, indent=2)
 
 def add_habit(name, schedule, start_date=None, username=None):
+    """Add a new habit for the user. Returns False if a habit with the same name exists."""
     data = load_data(username)
     if any(h["name"] == name for h in data["habits"]):
         return False
@@ -40,6 +44,7 @@ def add_habit(name, schedule, start_date=None, username=None):
     return True
 
 def edit_habit(old_name, name, schedule, start_date, username=None):
+    """Edit an existing habit's details. Updates records if the name changes."""
     data = load_data(username)
     for habit in data["habits"]:
         if habit["name"] == old_name:
@@ -54,6 +59,7 @@ def edit_habit(old_name, name, schedule, start_date, username=None):
     return True
 
 def remove_habit(name, username=None):
+    """Remove a habit and its records for the user."""
     data = load_data(username)
     data["habits"] = [h for h in data["habits"] if h["name"] != name]
     if name in data["records"]:
@@ -62,10 +68,12 @@ def remove_habit(name, username=None):
     return True
 
 def get_habits(username=None):
+    """Return the list of habits for the user."""
     data = load_data(username)
     return data["habits"]
 
 def mark_habit(habit_name, date, done, username=None):
+    """Mark a habit as done or not done for a specific date."""
     data = load_data(username)
     if habit_name not in data["records"]:
         data["records"][habit_name] = {}
@@ -74,6 +82,7 @@ def mark_habit(habit_name, date, done, username=None):
     return True
 
 def get_agenda(selected_date, username=None):
+    """Return a list of (habit, done) tuples for the selected date, based on each habit's schedule and start date."""
     data = load_data(username)
     habits = data["habits"]
     records = data["records"]
@@ -102,6 +111,7 @@ def get_agenda(selected_date, username=None):
     return agenda
 
 def get_monthly_completion(year, month, username=None):
+    """Return a list of dicts for each day in the month, indicating completion color for the user's habits."""
     data = load_data(username)
     habits = data["habits"]
     records = data["records"]

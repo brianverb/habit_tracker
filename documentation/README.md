@@ -12,6 +12,8 @@ This is a web-based Habit Tracker app built with Python and Flask. It allows you
 - Calendar view with color-coded days (green: all done, orange: some done, red: none done)
 - **AI Powered Planning & Habit Management:** Add, remove, or change habits using natural language (e.g., "Change my daily meditation to weekly", "Remove reading", "Add daily yoga").
 - Chat with an AI assistant about your schedule (uses OpenAI API). All chat history is saved per user and shown in the chatbox, with a button to clear chat history.
+- The AI assistant now supports context-dependent actions (e.g., "confirm" after a suggestion, "remove all habits").
+- All user data (habits and chat) is now stored in a separate directory for each user under `user_data/<username>/`.
 
 ## Requirements
 - Python 3.8+
@@ -90,5 +92,5 @@ Go to [http://localhost:5000/](http://localhost:5000/) in your browser.
 - `.gitignore` - Ensures your app code is tracked, but excludes virtual environments, __pycache__, .env, and all .json user data files from git.
 
 ## Notes
-- All changes and commands are documented in `remake_plan.txt`.
+- All changes and commands are documented in `documentation/changes_and_commands.txt`.
 - The app is modular and easy to extend.
