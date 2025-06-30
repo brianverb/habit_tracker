@@ -5,9 +5,13 @@ import calendar
 
 # Helper to get user-specific data file
 
+import os
+
 def get_data_file(username=None):
     if username:
-        return f"user_data_{username}.json"
+        user_dir = f"user_data/{username}"
+        os.makedirs(user_dir, exist_ok=True)
+        return f"{user_dir}/data.json"
     return "habits_data.json"
 
 def load_data(username=None):

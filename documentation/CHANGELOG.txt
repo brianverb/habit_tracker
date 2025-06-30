@@ -17,6 +17,7 @@
 - Rebranded and renamed the Smart Add endpoint/function to AI Powered Planning (`/ai_planning`).
 - Merged chat and AI planning into a single endpoint and UI. The AI Powered Planning box now handles both habit management and general schedule questions.
 - Added persistent per-user chat history and a "Clear Chat" button to the AI Powered Planning chatbox.
+- All user data (habits and chat) is now stored in a separate directory for each user under `user_data/<username>/`.
 
 ## v1.0.0
 - Initial Gradio-based habit tracker

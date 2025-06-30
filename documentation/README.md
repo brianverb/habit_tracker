@@ -1,7 +1,7 @@
 # Habit Tracker (Flask Version)
 
 ## Overview
-This is a web-based Habit Tracker app built with Python and Flask. It allows you to add, edit, remove, and manage habits, view your agenda, mark habits as done, and interact with an AI assistant for planning and questions. Data is stored per user in JSON files.
+This is a web-based Habit Tracker app built with Python and Flask. It allows you to add, edit, remove, and manage habits, view your agenda, mark habits as done, and interact with an AI assistant for planning and questions. Data is stored per user in their own directory under `user_data/<username>/`.
 
 ## Features
 - User registration and login (per-user data)
@@ -80,8 +80,9 @@ Go to [http://localhost:5000/](http://localhost:5000/) in your browser.
 ## File Structure
 - `app_flask.py` - Main Flask app
 - `habit_data.py` - Data logic (per-user habits, agenda, marking)
-- `users.json` - User credentials (now stored in `user_data/`)
-- `user_data_<username>.json` - Per-user habit and agenda data (now stored in `user_data/`)
+- `users.json` - User credentials (global, not per-user)
+- `user_data/<username>/data.json` - Per-user habit and agenda data (in a separate directory for each user)
+- `user_data/<username>/chat.json` - Per-user persistent chat history
 - `templates/` - HTML templates for the web interface
 - `.env` - Your OpenAI API key and Flask secret (not tracked by git)
 - `Dockerfile` - Docker build instructions
