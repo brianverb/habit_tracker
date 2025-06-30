@@ -1,4 +1,18 @@
-- Created project folder 'habit_tracker' on Desktop
-- Added README.md with project description and instructions
-- Added requirements.txt with dependencies (gradio, pandas)
-- Added app.py with Gradio web app for habit tracking
+# Changelog
+
+## v2.0.0 (Current)
+- Migrated from Gradio to Flask web app
+- Modularized data logic into `habit_data.py`
+- Added HTML templates for setup, agenda, and calendar views
+- Added color-coded calendar view for monthly habit completion
+- Added ability to add, edit (including start date and schedule), and remove habits
+- Added AJAX-based marking of habits as done/not done
+- Added OpenAI-powered chat assistant for schedule questions
+- Added "Smart Add" feature: add habits by typing natural language requests
+- Added `.env` support for OpenAI API key
+- Updated all documentation files
+
+## v1.0.0
+- Initial Gradio-based habit tracker
+- Basic add/view/mark habits functionality
+- Data stored in `habits_data.json`
