@@ -1,16 +1,16 @@
 # Habit Tracker (Flask Version)
 
 ## Overview
-This is a web-based Habit Tracker app built with Python and Flask. It allows you to add habits, view your daily/weekly agenda, mark habits as done or not done, and interact with an AI assistant about your schedule. Data is stored locally in a JSON file.
+This is a web-based Habit Tracker app built with Python and Flask. It allows you to add, edit, remove, and manage habits, view your agenda, mark habits as done, and interact with an AI assistant for planning and questions. Data is stored per user in JSON files.
 
 ## Features
-- Add new habits with custom schedules (Daily, Bi-daily, Weekly, Bi-weekly, Monthly)
+- User registration and login (per-user data)
+- Add, edit, or remove habits (including start date and schedule)
 - View all current habits
-- Edit or remove habits (including start date and schedule)
 - See your agenda for any selected day
 - Mark habits as done/not done for a specific day
 - Calendar view with color-coded days (green: all done, orange: some done, red: none done)
-- "Smart Add" habits by typing natural language requests (e.g., "I want to start daily meditation")
+- **AI Powered Planning:** Add, remove, or change habits using natural language (e.g., "Change my daily meditation to weekly", "Remove reading", "Add daily yoga")
 - Chat with an AI assistant about your schedule (uses OpenAI API)
 
 ## Requirements
@@ -20,7 +20,7 @@ This is a web-based Habit Tracker app built with Python and Flask. It allows you
 - openai
 - python-dotenv
 
-## Setup Instructions
+## Setup Instructions (Local)
 1. **Clone or download this repository.**
 2. **Create and activate a virtual environment:**
    - Windows:
@@ -41,6 +41,7 @@ This is a web-based Habit Tracker app built with Python and Flask. It allows you
    - Create a `.env` file in the project root with:
      ```
      OPENAI_API_KEY=your_openai_api_key_here
+     FLASK_SECRET_KEY=your_flask_secret_key_here
      ```
 5. **Run the app:**
    ```shell
@@ -49,12 +50,42 @@ This is a web-based Habit Tracker app built with Python and Flask. It allows you
 6. **Open your browser and go to:**
    [http://127.0.0.1:5000/](http://127.0.0.1:5000/)
 
+## Docker Instructions
+
+### 1. Build the Docker image
+```sh
+docker build -t habit-tracker-ai .
+```
+
+### 2. Run the Docker container
+```sh
+docker run -d -p 5000:5000 --env-file .env -v $(pwd)/user_data:/app/user_data habit-tracker-ai
+```
+- `--env-file .env` passes your OpenAI and Flask secrets to the container.
+- `-v $(pwd)/user_data:/app/user_data` mounts a local folder for persistent user data (create `user_data` if needed).
+- On Windows, use `%cd%\user_data:/app/user_data` for the volume path.
+
+### 3. Access the app
+Go to [http://localhost:5000/](http://localhost:5000/) in your browser.
+
+### 4. Notes
+- All user data and credentials are stored in `/app/user_data` inside the container. This is mapped to your local `user_data` folder for persistence.
+- The `.env` file is not included in the image; you must provide it at runtime.
+- The container exposes port 5000 by default.
+
+### 5. Dockerfile Environment Variables Explained
+- `PYTHONDONTWRITEBYTECODE=1`: Prevents Python from writing `.pyc` files (compiled bytecode) to disk. This keeps the container clean and avoids unnecessary files.
+- `PYTHONUNBUFFERED=1`: Forces Python to output logs and print statements immediately (no buffering), so you see real-time logs in `docker logs` and the terminal.
+
 ## File Structure
 - `app_flask.py` - Main Flask app
-- `habit_data.py` - Data logic (load/save habits, agenda, marking)
-- `habits_data.json` - Data storage
+- `habit_data.py` - Data logic (per-user habits, agenda, marking)
+- `users.json` - User credentials (now stored in `user_data/`)
+- `user_data_<username>.json` - Per-user habit and agenda data (now stored in `user_data/`)
 - `templates/` - HTML templates for the web interface
-- `.env` - Your OpenAI API key (not tracked by git)
+- `.env` - Your OpenAI API key and Flask secret (not tracked by git)
+- `Dockerfile` - Docker build instructions
+- `.dockerignore` - Files/folders excluded from Docker image
 
 ## Notes
 - All changes and commands are documented in `remake_plan.txt`.
