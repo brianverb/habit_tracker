@@ -50,68 +50,80 @@
     <a href="/calendar" class="btn btn-info mt-3 ms-2">View Calendar</a>
 
     <hr>
-    <h2>🪄 Smart Add Habit</h2>
-    <form id="smart-add-form" class="d-flex mb-3">
-        <input type="text" id="smart-add-input" class="form-control me-2" placeholder="Type a habit request, e.g. 'I want to start daily meditation'" required>
-        <button type="submit" class="btn btn-success">Add</button>
-    </form>
-    <div id="smart-add-status" class="text-muted small"></div>
-    <hr>
-    <h2>💬 Ask About Your Schedule</h2>
-    <div id="chat-box" class="border rounded p-3 mb-2" style="height:250px; overflow-y:auto; background:#f8f9fa;"></div>
-    <form id="chat-form" class="d-flex">
-        <input type="text" id="chat-input" class="form-control me-2" placeholder="Ask a question about your schedule..." required>
-        <button type="submit" class="btn btn-primary">Send</button>
-    </form>
-    <div id="chat-status" class="mt-2 text-muted small"></div>
-<script>
-const chatBox = document.getElementById('chat-box');
-const chatForm = document.getElementById('chat-form');
-const chatInput = document.getElementById('chat-input');
-const chatStatus = document.getElementById('chat-status');
-
-function appendMessage(sender, text) {
-    const msg = document.createElement('div');
-    msg.innerHTML = `<b>${sender}:</b> ${text}`;
-    chatBox.appendChild(msg);
-    chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-chatForm.addEventListener('submit', function(e) {
-    e.preventDefault();
-    const userMsg = chatInput.value;
-    appendMessage('You', userMsg);
-    chatInput.value = '';
-    chatStatus.textContent = 'Waiting for response...';
-    fetch('/chat', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({message: userMsg})
-    })
-    .then(r => r.json())
-    .then(data => {
-        appendMessage('AI', data.response);
-        chatStatus.textContent = '';
-    })
-    .catch(() => {
-        appendMessage('AI', 'Error getting response.');
-        chatStatus.textContent = '';
+    <h2>🤖 AI Powered Planning & Habit Management</h2>
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <span></span>
+        <button id="clear-chat-btn" class="btn btn-outline-danger btn-sm">Clear Chat</button>
+    </div>
+    <div id="ai-planning-chatbox" class="border rounded p-3 mb-2" style="height:250px; overflow-y:auto; background:#f8f9fa;"></div>
+    <script>
+    // Load chat history on page load
+    fetch('/get_chat_history').then(r => r.json()).then(data => {
+        const chatBox = document.getElementById('ai-planning-chatbox');
+        if (data.history && Array.isArray(data.history)) {
+            data.history.forEach(msg => {
+                const div = document.createElement('div');
+                div.innerHTML = `<b>${msg.sender === 'user' ? 'You' : 'AI'}:</b> ${msg.text}`;
+                chatBox.appendChild(div);
+            });
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
     });
-});
-</script>
+    // Clear chat button
+    document.getElementById('clear-chat-btn').addEventListener('click', function() {
+        if(confirm('Clear all chat history?')) {
+            fetch('/clear_chat_history', {method: 'POST'}).then(r => r.json()).then(data => {
+                if(data.success) {
+                    document.getElementById('ai-planning-chatbox').innerHTML = '';
+                }
+            });
+        }
+    });
+    </script>
+    <form id="ai-planning-form" class="d-flex mb-3">
+        <input type="text" id="ai-planning-input" class="form-control me-2" placeholder="Type a habit request or question, e.g. 'Change my daily meditation to weekly' or 'What habits do I have tomorrow?'" required>
+        <button type="submit" class="btn btn-success">Send</button>
+    </form>
+    <div id="ai-planning-status" class="text-muted small"></div>
+    <hr>
+
 <script>
-// Smart Add Habit
-    document.getElementById('smart-add-form').addEventListener('submit', function(e) {
+// AI Powered Planning & Habit Management (Chat UI)
+    const chatBox = document.getElementById('ai-planning-chatbox');
+    const planningForm = document.getElementById('ai-planning-form');
+    const planningInput = document.getElementById('ai-planning-input');
+    const planningStatus = document.getElementById('ai-planning-status');
+
+    function appendPlanningMessage(sender, text) {
+        const msg = document.createElement('div');
+        msg.innerHTML = `<b>${sender}:</b> ${text}`;
+        chatBox.appendChild(msg);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    planningForm.addEventListener('submit', function(e) {
         e.preventDefault();
-        const msg = document.getElementById('smart-add-input').value;
-        document.getElementById('smart-add-status').textContent = 'Processing...';
-        fetch('/smart_add', {
+        const msg = planningInput.value;
+        appendPlanningMessage('You', msg);
+        planningInput.value = '';
+        planningStatus.textContent = 'Processing...';
+        fetch('/ai_planning', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({message: msg})
         }).then(r => r.json()).then(data => {
-            document.getElementById('smart-add-status').textContent = data.status;
-            if(data.success) location.reload();
+            if (data.status) {
+                appendPlanningMessage('AI', data.status);
+                // Optionally, update the habit list dynamically here if desired
+            } else if (data.response) {
+                appendPlanningMessage('AI', data.response);
+            } else {
+                appendPlanningMessage('AI', 'No response.');
+            }
+            planningStatus.textContent = '';
+        }).catch(() => {
+            appendPlanningMessage('AI', 'Error getting response.');
+            planningStatus.textContent = '';
         });
     });
 // Remove habit

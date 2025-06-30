@@ -12,6 +12,11 @@
 - Added `.env` support for OpenAI API key
 - Updated all documentation files
 - Updated `.gitignore` to ensure app code is tracked, but `venv/`, `__pycache__/`, `.env`, and all `.json` user data files are excluded from git.
+- Extended Smart Add to support editing habits via natural language (action: 'edit').
+- Smart Add now passes the logged-in user's current habits to the AI for more accurate name matching.
+- Rebranded and renamed the Smart Add endpoint/function to AI Powered Planning (`/ai_planning`).
+- Merged chat and AI planning into a single endpoint and UI. The AI Powered Planning box now handles both habit management and general schedule questions.
+- Added persistent per-user chat history and a "Clear Chat" button to the AI Powered Planning chatbox.
 
 ## v1.0.0
 - Initial Gradio-based habit tracker

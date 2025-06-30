@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 from habit_data import add_habit, get_habits, mark_habit, get_agenda, get_monthly_completion, edit_habit, remove_habit
+import threading
 from datetime import datetime
 import calendar
 import os
@@ -18,6 +19,9 @@ def get_current_user():
 
 def get_user_data_path(username):
     return f"user_data_{username}.json"
+
+def get_user_chat_path(username):
+    return f"user_data_{username}_chat.json"
 
 @app.route('/')
 def index():
@@ -114,48 +118,61 @@ def remove_habit_route():
     remove_habit(name, username=get_current_user())
     return jsonify({'success': True})
 
-@app.route('/chat', methods=['POST'])
-def chat():
+
+@app.route('/clear_chat_history', methods=['POST'])
+def clear_chat_history():
     if not get_current_user():
-        return jsonify({'response': 'Not logged in'})
-    user_message = request.json['message']
-    user_data_path = get_user_data_path(get_current_user())
-    if not os.path.exists(user_data_path):
-        habits_data = '{}'
-    else:
-        with open(user_data_path, 'r') as f:
-            habits_data = f.read()
-    prompt = f"""
-You are a helpful assistant for a habit tracker app. The user will ask questions about their schedule. Here is their current habit data (in JSON):
-{habits_data}
-
-User question: {user_message}
-"""
-    client = openai.OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+        return jsonify({'success': False})
+    chat_path = get_user_chat_path(get_current_user())
     try:
-        response = client.chat.completions.create(
-            model="gpt-4.1-nano-2025-04-14",
-            messages=[{"role": "system", "content": "You are a helpful assistant for a habit tracker app."},
-                      {"role": "user", "content": prompt}]
-        )
-        answer = response.choices[0].message.content
-    except Exception as e:
-        answer = f"Error: {e}"
-    return jsonify({'response': answer})
+        with open(chat_path, 'w') as f:
+            json.dump([], f)
+        return jsonify({'success': True})
+    except Exception:
+        return jsonify({'success': False})
 
-@app.route('/smart_add', methods=['POST'])
-def smart_add():
+@app.route('/get_chat_history', methods=['GET'])
+def get_chat_history():
+    if not get_current_user():
+        return jsonify({'history': []})
+    chat_path = get_user_chat_path(get_current_user())
+    if not os.path.exists(chat_path):
+        return jsonify({'history': []})
+    with open(chat_path, 'r') as f:
+        try:
+            history = json.load(f)
+        except Exception:
+            history = []
+    return jsonify({'history': history})
+
+@app.route('/ai_planning', methods=['POST'])
+def ai_planning():
     if not get_current_user():
         return jsonify({'success': False, 'status': 'Not logged in'})
     user_message = request.json['message']
     openai_client = openai.OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-    prompt = (
+    user_habits = get_habits(get_current_user())
+    habits_json = json.dumps(user_habits, indent=2)
+    chat_path = get_user_chat_path(get_current_user())
+    # Load chat history
+    if os.path.exists(chat_path):
+        try:
+            with open(chat_path, 'r') as f:
+                chat_history = json.load(f)
+        except Exception:
+            chat_history = []
+    else:
+        chat_history = []
+    # Try to parse as planning first, fallback to chat if not actionable
+    planning_prompt = (
         "You are a helpful assistant for a habit tracker app. "
-        "The user may want to add or remove a habit. "
+        "The user may want to add, remove, or change (edit) a habit. "
+        "Here is a list of the user's current habits (in JSON):\n" + habits_json + "\n"
         "If the user wants to add a habit, extract the habit name (as exactly stored), schedule (Daily, Weekly, Bi-daily, Bi-weekly, Monthly), and start date (YYYY-MM-DD, optional). "
         "If the user wants to remove a habit, extract the habit name (as exactly stored) and set action to 'remove'. "
-        "Always include the action field as either 'add' or 'remove'. "
-        "Respond in JSON: {\"action\": \"add\" or \"remove\", \"name\":..., \"schedule\":..., \"start_date\":...}. "
+        "If the user wants to change or edit a habit, extract the old habit name (as exactly stored), the new name (if changed), the new schedule (if changed), and the new start date (if changed), and set action to 'edit'. "
+        "Always include the action field as either 'add', 'remove', or 'edit'. "
+        "Respond in JSON: {\"action\": \"add\" or \"remove\" or \"edit\", \"name\":..., \"schedule\":..., \"start_date\":..., \"old_name\":...}. "
         "If you can't extract, respond with an empty JSON.\n"
         f"Message: {user_message}"
     )
@@ -163,31 +180,95 @@ def smart_add():
         response = openai_client.chat.completions.create(
             model="gpt-4.1-nano-2025-04-14",
             messages=[{"role": "system", "content": "You are a helpful assistant for a habit tracker app."},
-                      {"role": "user", "content": prompt}]
+                      {"role": "user", "content": planning_prompt}]
         )
         content = response.choices[0].message.content
-        data = json.loads(content)
-        action = data.get("action", "add")
+        try:
+            data = json.loads(content)
+        except Exception:
+            data = {}
+        action = data.get("action")
         name = data.get("name")
         schedule = data.get("schedule")
         start_date = data.get("start_date")
-        print(f"[SMART_ADD DEBUG] action: {action}, name: {name}, schedule: {schedule}, start_date: {start_date}")
-        # Fuzzy/case-insensitive match for removal
+        old_name = data.get("old_name")
+        print(f"[AI_PLANNING DEBUG] action: {action}, name: {name}, schedule: {schedule}, start_date: {start_date}, old_name: {old_name}")
+        user_habits = get_habits(get_current_user())
+        # If it's a planning action
         if action == "remove" and name:
-            user_habits = get_habits(get_current_user())
             match = next((h["name"] for h in user_habits if h["name"].lower() == name.lower()), None)
             if match:
                 remove_habit(match, username=get_current_user())
-                return jsonify({"success": True, "status": f"Habit '{match}' removed."})
+                ai_msg = f"Habit '{match}' removed."
+                chat_history.append({"sender": "user", "text": user_message})
+                chat_history.append({"sender": "ai", "text": ai_msg})
+                threading.Thread(target=lambda: save_chat_history(chat_path, chat_history)).start()
+                return jsonify({"success": True, "status": ai_msg})
             else:
-                return jsonify({"success": False, "status": f"No habit found matching '{name}' for removal."})
+                ai_msg = f"No habit found matching '{name}' for removal."
+                chat_history.append({"sender": "user", "text": user_message})
+                chat_history.append({"sender": "ai", "text": ai_msg})
+                threading.Thread(target=lambda: save_chat_history(chat_path, chat_history)).start()
+                return jsonify({"success": False, "status": ai_msg})
+        elif action == "edit" and old_name:
+            match = next((h["name"] for h in user_habits if h["name"].lower() == old_name.lower()), None)
+            if match:
+                habit = next(h for h in user_habits if h["name"] == match)
+                new_name = name if name else habit["name"]
+                new_schedule = schedule if schedule else habit["schedule"]
+                new_start_date = start_date if start_date else habit.get("start_date")
+                edit_habit(match, new_name, new_schedule, new_start_date, username=get_current_user())
+                ai_msg = f"Habit '{match}' updated."
+                chat_history.append({"sender": "user", "text": user_message})
+                chat_history.append({"sender": "ai", "text": ai_msg})
+                threading.Thread(target=lambda: save_chat_history(chat_path, chat_history)).start()
+                return jsonify({"success": True, "status": ai_msg})
+            else:
+                ai_msg = f"No habit found matching '{old_name}' for editing."
+                chat_history.append({"sender": "user", "text": user_message})
+                chat_history.append({"sender": "ai", "text": ai_msg})
+                threading.Thread(target=lambda: save_chat_history(chat_path, chat_history)).start()
+                return jsonify({"success": False, "status": ai_msg})
         elif action == "add" and name and schedule:
             add_habit(name, schedule, start_date, username=get_current_user())
-            return jsonify({"success": True, "status": f"Habit '{name}' added with schedule '{schedule}'."})
+            ai_msg = f"Habit '{name}' added with schedule '{schedule}'."
+            chat_history.append({"sender": "user", "text": user_message})
+            chat_history.append({"sender": "ai", "text": ai_msg})
+            threading.Thread(target=lambda: save_chat_history(chat_path, chat_history)).start()
+            return jsonify({"success": True, "status": ai_msg})
+        # If not a planning action, treat as chat
         else:
-            return jsonify({"success": False, "status": "Could not extract habit details from your message."})
+            user_data_path = get_user_data_path(get_current_user())
+            if not os.path.exists(user_data_path):
+                habits_data = '{}'
+            else:
+                with open(user_data_path, 'r') as f:
+                    habits_data = f.read()
+            chat_prompt = f"""
+You are a helpful assistant for a habit tracker app. The user will ask questions about their schedule. Here is their current habit data (in JSON):
+{habits_data}
+
+User question: {user_message}
+"""
+            chat_response = openai_client.chat.completions.create(
+                model="gpt-4.1-nano-2025-04-14",
+                messages=[{"role": "system", "content": "You are a helpful assistant for a habit tracker app."},
+                          {"role": "user", "content": chat_prompt}]
+            )
+            answer = chat_response.choices[0].message.content
+            chat_history.append({"sender": "user", "text": user_message})
+            chat_history.append({"sender": "ai", "text": answer})
+            threading.Thread(target=lambda: save_chat_history(chat_path, chat_history)).start()
+            return jsonify({"success": True, "response": answer})
     except Exception as e:
         return jsonify({"success": False, "status": f"Error: {e}"})
+
+def save_chat_history(chat_path, chat_history):
+    try:
+        with open(chat_path, 'w') as f:
+            json.dump(chat_history[-100:], f, indent=2)  # Keep last 100 messages
+    except Exception:
+        pass
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():

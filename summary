@@ -4,7 +4,7 @@ This project is a modular, Flask-based Habit Tracker web application. It allows 
 - Register and log in (per-user data)
 - Add, edit, and remove habits (with custom schedules and start dates)
 - View and mark habits as done/not done in an agenda or calendar view
-- Use an AI-powered chat and planning interface for natural language habit management
+- Use an AI-powered chat and planning interface for natural language habit management (including add, remove, and now edit habits)
 - Store all user data in per-user JSON files (excluded from git)
 
 ## Version Control & .gitignore
@@ -17,3 +17,4 @@ This project is a modular, Flask-based Habit Tracker web application. It allows 
 ## Documentation
 - All changes and commands are logged in `documentation/changes_and_commands.txt`.
 - The project is organized for clarity, modularity, and privacy.
+- The Smart Add feature now supports editing habits via natural language.

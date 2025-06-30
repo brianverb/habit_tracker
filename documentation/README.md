@@ -10,8 +10,8 @@ This is a web-based Habit Tracker app built with Python and Flask. It allows you
 - See your agenda for any selected day
 - Mark habits as done/not done for a specific day
 - Calendar view with color-coded days (green: all done, orange: some done, red: none done)
-- **AI Powered Planning:** Add, remove, or change habits using natural language (e.g., "Change my daily meditation to weekly", "Remove reading", "Add daily yoga")
-- Chat with an AI assistant about your schedule (uses OpenAI API)
+- **AI Powered Planning & Habit Management:** Add, remove, or change habits using natural language (e.g., "Change my daily meditation to weekly", "Remove reading", "Add daily yoga").
+- Chat with an AI assistant about your schedule (uses OpenAI API). All chat history is saved per user and shown in the chatbox, with a button to clear chat history.
 
 ## Requirements
 - Python 3.8+
