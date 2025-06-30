@@ -31,14 +31,104 @@
     </form>
     <h2>Current Habits</h2>
     <table class="table table-bordered">
-        <thead><tr><th>Name</th><th>Schedule</th><th>Start Date</th></tr></thead>
+        <thead><tr><th>Name</th><th>Schedule</th><th>Start Date</th><th>Actions</th></tr></thead>
         <tbody>
         {% for h in habits %}
-            <tr><td>{{ h.name }}</td><td>{{ h.schedule }}</td><td>{{ h.start_date }}</td></tr>
+            <tr>
+                <td>{{ h.name }}</td>
+                <td>{{ h.schedule }}</td>
+                <td>{{ h.start_date }}</td>
+                <td>
+                    <button class="btn btn-warning btn-sm edit-habit" data-habit="{{ h.name }}" data-schedule="{{ h.schedule }}" data-start="{{ h.start_date }}">Edit</button>
+                    <button class="btn btn-danger btn-sm remove-habit" data-habit="{{ h.name }}">Remove</button>
+                </td>
+            </tr>
         {% endfor %}
         </tbody>
     </table>
     <a href="/agenda" class="btn btn-success mt-3">Go to Agenda</a>
     <a href="/calendar" class="btn btn-info mt-3 ms-2">View Calendar</a>
+
+    <hr>
+    <h2>💬 Ask About Your Schedule</h2>
+    <div id="chat-box" class="border rounded p-3 mb-2" style="height:250px; overflow-y:auto; background:#f8f9fa;"></div>
+    <form id="chat-form" class="d-flex">
+        <input type="text" id="chat-input" class="form-control me-2" placeholder="Ask a question about your schedule..." required>
+        <button type="submit" class="btn btn-primary">Send</button>
+    </form>
+    <div id="chat-status" class="mt-2 text-muted small"></div>
+<script>
+const chatBox = document.getElementById('chat-box');
+const chatForm = document.getElementById('chat-form');
+const chatInput = document.getElementById('chat-input');
+const chatStatus = document.getElementById('chat-status');
+
+function appendMessage(sender, text) {
+    const msg = document.createElement('div');
+    msg.innerHTML = `<b>${sender}:</b> ${text}`;
+    chatBox.appendChild(msg);
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+chatForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const userMsg = chatInput.value;
+    appendMessage('You', userMsg);
+    chatInput.value = '';
+    chatStatus.textContent = 'Waiting for response...';
+    fetch('/chat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({message: userMsg})
+    })
+    .then(r => r.json())
+    .then(data => {
+        appendMessage('AI', data.response);
+        chatStatus.textContent = '';
+    })
+    .catch(() => {
+        appendMessage('AI', 'Error getting response.');
+        chatStatus.textContent = '';
+    });
+});
+</script>
+<script>
+// Remove habit
+    document.querySelectorAll('.remove-habit').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const habit = this.getAttribute('data-habit');
+            if(confirm('Are you sure you want to remove "' + habit + '"?')) {
+                fetch('/remove_habit', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({habit})
+                }).then(r => r.json()).then(data => {
+                    if(data.success) location.reload();
+                });
+            }
+        });
+    });
+// Edit habit (simple prompt for now)
+    document.querySelectorAll('.edit-habit').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const oldName = this.getAttribute('data-habit');
+            const oldSchedule = this.getAttribute('data-schedule');
+            const oldStart = this.getAttribute('data-start');
+            const name = prompt('Edit habit name:', oldName);
+            if(!name) return;
+            const schedule = prompt('Edit schedule (Daily, Bi-daily, Weekly, Bi-weekly, Monthly):', oldSchedule);
+            if(!schedule) return;
+            const start_date = prompt('Edit start date (YYYY-MM-DD):', oldStart);
+            if(!start_date) return;
+            fetch('/edit_habit', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({oldName, name, schedule, start_date})
+            }).then(r => r.json()).then(data => {
+                if(data.success) location.reload();
+            });
+        });
+    });
+</script>
 </body>
 </html>

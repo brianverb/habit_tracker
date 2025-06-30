@@ -1,2 +1,4 @@
-gradio
+flask
 pandas
+openai
+python-dotenv

@@ -18,12 +18,8 @@
         {% for name, done in agenda %}
             <tr>
                 <td>{{ name }}</td>
-                <td id="status-{{ name }}" class="fw-bold {{ 'text-bg-success' if done else 'text-bg-danger' }}">{{ 'Done' if done else 'Not Done' }}</td>
-                <td>
-                    <button class="btn btn-sm btn-toggle" data-habit="{{ name }}" data-done="{{ '1' if done else '0' }}">
-                        Mark as {{ 'Not Done' if done else 'Done' }}
-                    </button>
-                </td>
+                <td id="status-{{ name }}" class="fw-bold {{ 'text-bg-success' if done else 'text-bg-danger' }} btn-toggle" data-habit="{{ name }}" data-done="{{ '1' if done else '0' }}" style="cursor:pointer;">{{ 'Done' if done else 'Not Done' }}</td>
+                <td></td>
             </tr>
         {% endfor %}
         </tbody>

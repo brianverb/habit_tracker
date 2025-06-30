@@ -14,6 +14,12 @@
 </head>
 <body class="container py-4">
     <h1>🗓️ Habit Tracker - Calendar View</h1>
+    <form method="get" class="mb-3 d-flex align-items-center" action="/calendar">
+        <input type="hidden" name="year" value="{{ year }}">
+        <button class="btn btn-outline-primary me-2" name="month" value="{{ prev_month }}">&lt; Prev</button>
+        <span class="fw-bold me-2">{{ month_name }} {{ year }}</span>
+        <button class="btn btn-outline-primary" name="month" value="{{ next_month }}">Next &gt;</button>
+    </form>
     <a href="/" class="btn btn-link mb-3">Back to Setup</a>
     <table class="table table-bordered calendar-table">
         <thead>

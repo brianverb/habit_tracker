@@ -28,6 +28,28 @@ def add_habit(name, schedule, start_date=None):
     save_data(data)
     return True
 
+def edit_habit(old_name, name, schedule, start_date):
+    data = load_data()
+    for habit in data["habits"]:
+        if habit["name"] == old_name:
+            habit["name"] = name
+            habit["schedule"] = schedule
+            habit["start_date"] = start_date
+            break
+    # Also update records if name changed
+    if old_name != name and old_name in data["records"]:
+        data["records"][name] = data["records"].pop(old_name)
+    save_data(data)
+    return True
+
+def remove_habit(name):
+    data = load_data()
+    data["habits"] = [h for h in data["habits"] if h["name"] != name]
+    if name in data["records"]:
+        del data["records"][name]
+    save_data(data)
+    return True
+
 def get_habits():
     data = load_data()
     return data["habits"]
