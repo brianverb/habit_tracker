@@ -106,7 +106,7 @@ User question: {user_message}
     client = openai.OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
     try:
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4.1-nano-2025-04-14",
             messages=[{"role": "system", "content": "You are a helpful assistant for a habit tracker app."},
                       {"role": "user", "content": prompt}]
         )
@@ -114,6 +114,36 @@ User question: {user_message}
     except Exception as e:
         answer = f"Error: {e}"
     return jsonify({'response': answer})
+
+@app.route('/smart_add', methods=['POST'])
+def smart_add():
+    user_message = request.json['message']
+    openai_client = openai.OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+    prompt = (
+        "Extract the habit name, schedule (Daily, Weekly, Bi-daily, Bi-weekly, Monthly), "
+        "and start date (YYYY-MM-DD, optional) from this message. "
+        "Respond in JSON: {\"name\":..., \"schedule\":..., \"start_date\":...}. "
+        "If you can't extract, respond with an empty JSON.\n"
+        f"Message: {user_message}"
+    )
+    try:
+        response = openai_client.chat.completions.create(
+            model="gpt-4.1-nano-2025-04-14",
+            messages=[{"role": "system", "content": "You are a helpful assistant for a habit tracker app."},
+                      {"role": "user", "content": prompt}]
+        )
+        content = response.choices[0].message.content
+        data = json.loads(content)
+        name = data.get("name")
+        schedule = data.get("schedule")
+        start_date = data.get("start_date")
+        if name and schedule:
+            add_habit(name, schedule, start_date)
+            return jsonify({"success": True, "status": f"Habit '{name}' added with schedule '{schedule}'."})
+        else:
+            return jsonify({"success": False, "status": "Could not extract habit details from your message."})
+    except Exception as e:
+        return jsonify({"success": False, "status": f"Error: {e}"})
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -50,6 +50,13 @@
     <a href="/calendar" class="btn btn-info mt-3 ms-2">View Calendar</a>
 
     <hr>
+    <h2>🪄 Smart Add Habit</h2>
+    <form id="smart-add-form" class="d-flex mb-3">
+        <input type="text" id="smart-add-input" class="form-control me-2" placeholder="Type a habit request, e.g. 'I want to start daily meditation'" required>
+        <button type="submit" class="btn btn-success">Add</button>
+    </form>
+    <div id="smart-add-status" class="text-muted small"></div>
+    <hr>
     <h2>💬 Ask About Your Schedule</h2>
     <div id="chat-box" class="border rounded p-3 mb-2" style="height:250px; overflow-y:auto; background:#f8f9fa;"></div>
     <form id="chat-form" class="d-flex">
@@ -93,6 +100,20 @@ chatForm.addEventListener('submit', function(e) {
 });
 </script>
 <script>
+// Smart Add Habit
+    document.getElementById('smart-add-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const msg = document.getElementById('smart-add-input').value;
+        document.getElementById('smart-add-status').textContent = 'Processing...';
+        fetch('/smart_add', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({message: msg})
+        }).then(r => r.json()).then(data => {
+            document.getElementById('smart-add-status').textContent = data.status;
+            if(data.success) location.reload();
+        });
+    });
 // Remove habit
     document.querySelectorAll('.remove-habit').forEach(btn => {
         btn.addEventListener('click', function() {
