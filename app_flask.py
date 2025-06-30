@@ -3,6 +3,11 @@ from habit_data import add_habit, get_habits, mark_habit, get_agenda, get_monthl
 from datetime import datetime
 import calendar
 import os
+import json
+import openai
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 
@@ -86,6 +91,29 @@ def remove_habit_route():
     name = data['habit']
     remove_habit(name)
     return jsonify({'success': True})
+
+@app.route('/chat', methods=['POST'])
+def chat():
+    user_message = request.json['message']
+    with open('habits_data.json', 'r') as f:
+        habits_data = f.read()
+    prompt = f"""
+You are a helpful assistant for a habit tracker app. The user will ask questions about their schedule. Here is their current habit data (in JSON):
+{habits_data}
+
+User question: {user_message}
+"""
+    client = openai.OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+    try:
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "system", "content": "You are a helpful assistant for a habit tracker app."},
+                      {"role": "user", "content": prompt}]
+        )
+        answer = response.choices[0].message.content
+    except Exception as e:
+        answer = f"Error: {e}"
+    return jsonify({'response': answer})
 
 if __name__ == '__main__':
     app.run(debug=True)

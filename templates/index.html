@@ -108,7 +108,7 @@ chatForm.addEventListener('submit', function(e) {
             }
         });
     });
-// Edit habit (simple prompt for now)
+// Edit habit (with date picker)
     document.querySelectorAll('.edit-habit').forEach(btn => {
         btn.addEventListener('click', function() {
             const oldName = this.getAttribute('data-habit');
@@ -118,15 +118,27 @@ chatForm.addEventListener('submit', function(e) {
             if(!name) return;
             const schedule = prompt('Edit schedule (Daily, Bi-daily, Weekly, Bi-weekly, Monthly):', oldSchedule);
             if(!schedule) return;
-            const start_date = prompt('Edit start date (YYYY-MM-DD):', oldStart);
-            if(!start_date) return;
-            fetch('/edit_habit', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({oldName, name, schedule, start_date})
-            }).then(r => r.json()).then(data => {
-                if(data.success) location.reload();
-            });
+            // Create a temporary input for date picking
+            const tempInput = document.createElement('input');
+            tempInput.type = 'date';
+            tempInput.value = oldStart;
+            tempInput.style.position = 'fixed';
+            tempInput.style.left = '-9999px';
+            document.body.appendChild(tempInput);
+            tempInput.focus();
+            tempInput.click();
+            tempInput.onchange = function() {
+                const start_date = tempInput.value;
+                document.body.removeChild(tempInput);
+                if(!start_date) return;
+                fetch('/edit_habit', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({oldName, name, schedule, start_date})
+                }).then(r => r.json()).then(data => {
+                    if(data.success) location.reload();
+                });
+            };
         });
     });
 </script>
