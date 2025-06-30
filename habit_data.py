@@ -3,20 +3,27 @@ import os
 from datetime import datetime, timedelta
 import calendar
 
-DATA_FILE = "habits_data.json"
+# Helper to get user-specific data file
 
-def load_data():
-    if not os.path.exists(DATA_FILE):
+def get_data_file(username=None):
+    if username:
+        return f"user_data_{username}.json"
+    return "habits_data.json"
+
+def load_data(username=None):
+    data_file = get_data_file(username)
+    if not os.path.exists(data_file):
         return {"habits": [], "records": {}}
-    with open(DATA_FILE, "r") as f:
+    with open(data_file, "r") as f:
         return json.load(f)
 
-def save_data(data):
-    with open(DATA_FILE, "w") as f:
+def save_data(data, username=None):
+    data_file = get_data_file(username)
+    with open(data_file, "w") as f:
         json.dump(data, f, indent=2)
 
-def add_habit(name, schedule, start_date=None):
-    data = load_data()
+def add_habit(name, schedule, start_date=None, username=None):
+    data = load_data(username)
     if any(h["name"] == name for h in data["habits"]):
         return False
     habit = {"name": name, "schedule": schedule}
@@ -25,11 +32,11 @@ def add_habit(name, schedule, start_date=None):
     else:
         habit["start_date"] = datetime.now().strftime("%Y-%m-%d")
     data["habits"].append(habit)
-    save_data(data)
+    save_data(data, username)
     return True
 
-def edit_habit(old_name, name, schedule, start_date):
-    data = load_data()
+def edit_habit(old_name, name, schedule, start_date, username=None):
+    data = load_data(username)
     for habit in data["habits"]:
         if habit["name"] == old_name:
             habit["name"] = name
@@ -39,31 +46,31 @@ def edit_habit(old_name, name, schedule, start_date):
     # Also update records if name changed
     if old_name != name and old_name in data["records"]:
         data["records"][name] = data["records"].pop(old_name)
-    save_data(data)
+    save_data(data, username)
     return True
 
-def remove_habit(name):
-    data = load_data()
+def remove_habit(name, username=None):
+    data = load_data(username)
     data["habits"] = [h for h in data["habits"] if h["name"] != name]
     if name in data["records"]:
         del data["records"][name]
-    save_data(data)
+    save_data(data, username)
     return True
 
-def get_habits():
-    data = load_data()
+def get_habits(username=None):
+    data = load_data(username)
     return data["habits"]
 
-def mark_habit(habit_name, date, done):
-    data = load_data()
+def mark_habit(habit_name, date, done, username=None):
+    data = load_data(username)
     if habit_name not in data["records"]:
         data["records"][habit_name] = {}
     data["records"][habit_name][date] = done
-    save_data(data)
+    save_data(data, username)
     return True
 
-def get_agenda(selected_date):
-    data = load_data()
+def get_agenda(selected_date, username=None):
+    data = load_data(username)
     habits = data["habits"]
     records = data["records"]
     agenda = []
@@ -90,8 +97,8 @@ def get_agenda(selected_date):
             agenda.append((name, done))
     return agenda
 
-def get_monthly_completion(year, month):
-    data = load_data()
+def get_monthly_completion(year, month, username=None):
+    data = load_data(username)
     habits = data["habits"]
     records = data["records"]
     month_days = calendar.monthrange(year, month)[1]
