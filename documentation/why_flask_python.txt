@@ -1,0 +1,2 @@
+Why Flask and Python?
+Python is chosen for its readability, simplicity, and strong ecosystem for data handling and web development. Flask is a lightweight, flexible web framework for Python that makes it easy to build web applications quickly. Flask allows modular code, easy routing, and integration with HTML templates, making it ideal for small to medium web projects like this habit tracker. Python's ecosystem also enables easy integration with AI services like OpenAI.

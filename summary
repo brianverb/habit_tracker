@@ -1,0 +1,19 @@
+# Project Summary
+
+This project is a modular, Flask-based Habit Tracker web application. It allows users to:
+- Register and log in (per-user data)
+- Add, edit, and remove habits (with custom schedules and start dates)
+- View and mark habits as done/not done in an agenda or calendar view
+- Use an AI-powered chat and planning interface for natural language habit management
+- Store all user data in per-user JSON files (excluded from git)
+
+## Version Control & .gitignore
+- The `.gitignore` is configured so that all app code is tracked by git, but the following are excluded:
+  - `venv/` (virtual environment)
+  - `__pycache__/` (Python bytecode cache)
+  - `.env` (environment variables)
+  - `*.json` (user data files)
+
+## Documentation
+- All changes and commands are logged in `documentation/changes_and_commands.txt`.
+- The project is organized for clarity, modularity, and privacy.

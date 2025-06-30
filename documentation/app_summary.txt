@@ -1,0 +1,4 @@
+App Summary:
+This Habit Tracker is a web application that allows users to create, view, and manage daily, weekly, and custom-scheduled habits. Users can add, edit, or remove habits, view their agenda for any day, mark habits as done or not done, and interact with an AI assistant about their schedule. The app stores all data in a JSON file and provides a simple, interactive web interface for habit management, including a smart natural language habit addition feature.
+
+[Update] The project is configured so that all application code is tracked by git, but virtual environments, Python bytecode caches (`__pycache__/`), environment variable files (`.env`), and user data files (`*.json`) are excluded from version control for privacy and cleanliness.

@@ -1,0 +1,41 @@
+# Documentation: File Moves (Cleanup)
+
+## Date: [Auto-generated]
+
+### Files moved to `documentation/` directory:
+- README.md
+- app_summary.txt
+- CHANGELOG.txt
+- remake_plan.txt
+- why_flask_python.txt
+
+### Commands run:
+- Created `documentation/` directory
+- Moved all .txt and .md documentation files from project root to `documentation/`
+
+This keeps the project root clean and all documentation organized in one place.
+
+---
+
+## [Update] .gitignore for App Tracking and Pycache Exclusion
+
+### Date: [Auto-generated]
+
+### Change:
+- Updated `.gitignore` to ensure the app code is tracked by git, but the following are excluded:
+  - `venv/` (virtual environment)
+  - `__pycache__/` (Python bytecode cache)
+  - `.env` (environment variables)
+  - `*.json` (user data files)
+
+### Command/Action:
+- Edited `.gitignore` to:
+  ```
+  venv/
+  __pycache__/
+  .env
+  *.json
+  ```
+
+### Reason:
+- To ensure the application code is always pushed to git, but sensitive or unnecessary files (like caches and user data) are not.
