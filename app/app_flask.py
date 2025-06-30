@@ -131,6 +131,12 @@ def clear_chat_history():
     except Exception:
         return jsonify({'success': False})
 
+@app.route('/get_habits', methods=['GET'])
+def get_habits_api():
+    if not get_current_user():
+        return jsonify({'habits': []})
+    return jsonify({'habits': get_habits(get_current_user())})
+
 @app.route('/get_chat_history', methods=['GET'])
 def get_chat_history():
     if not get_current_user():
@@ -166,14 +172,11 @@ def ai_planning():
     # Try to parse as planning first, fallback to chat if not actionable
     planning_prompt = (
         "You are a helpful assistant for a habit tracker app. "
-        "The user may want to add, remove, or change (edit) a habit. "
+        "The user may want to add, remove, or change (edit) one or more habits in a single message. "
         "Here is a list of the user's current habits (in JSON):\n" + habits_json + "\n"
-        "If the user wants to add a habit, extract the habit name (as exactly stored), schedule (Daily, Weekly, Bi-daily, Bi-weekly, Monthly), and start date (YYYY-MM-DD, optional). "
-        "If the user wants to remove a habit, extract the habit name (as exactly stored) and set action to 'remove'. "
-        "If the user wants to change or edit a habit, extract the old habit name (as exactly stored), the new name (if changed), the new schedule (if changed), and the new start date (if changed), and set action to 'edit'. "
-        "Always include the action field as either 'add', 'remove', or 'edit'. "
-        "Respond in JSON: {\"action\": \"add\" or \"remove\" or \"edit\", \"name\":..., \"schedule\":..., \"start_date\":..., \"old_name\":...}. "
-        "If you can't extract, respond with an empty JSON.\n"
+        "For each action, extract: action (add, remove, or edit), name, schedule, start_date, and old_name (for edits). "
+        "Return a JSON array: [{\"action\":..., \"name\":..., \"schedule\":..., \"start_date\":..., \"old_name\":...}, ...]. "
+        "If you can't extract any, respond with an empty array.\n"
         f"Message: {user_message}"
     )
     try:
@@ -187,55 +190,43 @@ def ai_planning():
             data = json.loads(content)
         except Exception:
             data = {}
-        action = data.get("action")
-        name = data.get("name")
-        schedule = data.get("schedule")
-        start_date = data.get("start_date")
-        old_name = data.get("old_name")
-        print(f"[AI_PLANNING DEBUG] action: {action}, name: {name}, schedule: {schedule}, start_date: {start_date}, old_name: {old_name}")
         user_habits = get_habits(get_current_user())
-        # If it's a planning action
-        if action == "remove" and name:
-            match = next((h["name"] for h in user_habits if h["name"].lower() == name.lower()), None)
-            if match:
-                remove_habit(match, username=get_current_user())
-                ai_msg = f"Habit '{match}' removed."
-                chat_history.append({"sender": "user", "text": user_message})
+        chat_history.append({"sender": "user", "text": user_message})
+        # If data is a list, process multiple actions
+        if isinstance(data, list):
+            results = []
+            for action_obj in data:
+                action = action_obj.get("action")
+                name = action_obj.get("name")
+                schedule = action_obj.get("schedule")
+                start_date = action_obj.get("start_date")
+                old_name = action_obj.get("old_name")
+                if action == "remove" and name:
+                    match = next((h["name"] for h in user_habits if h["name"].lower() == name.lower()), None)
+                    if match:
+                        remove_habit(match, username=get_current_user())
+                        results.append(f"Habit '{match}' removed.")
+                    else:
+                        results.append(f"No habit found matching '{name}' for removal.")
+                elif action == "edit" and old_name:
+                    match = next((h["name"] for h in user_habits if h["name"].lower() == old_name.lower()), None)
+                    if match:
+                        habit = next(h for h in user_habits if h["name"] == match)
+                        new_name = name if name else habit["name"]
+                        new_schedule = schedule if schedule else habit["schedule"]
+                        new_start_date = start_date if start_date else habit.get("start_date")
+                        edit_habit(match, new_name, new_schedule, new_start_date, username=get_current_user())
+                        results.append(f"Habit '{match}' updated.")
+                    else:
+                        results.append(f"No habit found matching '{old_name}' for editing.")
+                elif action == "add" and name and schedule:
+                    add_habit(name, schedule, start_date, username=get_current_user())
+                    results.append(f"Habit '{name}' added with schedule '{schedule}'.")
+            if results:
+                ai_msg = "<br>".join(results)
                 chat_history.append({"sender": "ai", "text": ai_msg})
                 threading.Thread(target=lambda: save_chat_history(chat_path, chat_history)).start()
                 return jsonify({"success": True, "status": ai_msg})
-            else:
-                ai_msg = f"No habit found matching '{name}' for removal."
-                chat_history.append({"sender": "user", "text": user_message})
-                chat_history.append({"sender": "ai", "text": ai_msg})
-                threading.Thread(target=lambda: save_chat_history(chat_path, chat_history)).start()
-                return jsonify({"success": False, "status": ai_msg})
-        elif action == "edit" and old_name:
-            match = next((h["name"] for h in user_habits if h["name"].lower() == old_name.lower()), None)
-            if match:
-                habit = next(h for h in user_habits if h["name"] == match)
-                new_name = name if name else habit["name"]
-                new_schedule = schedule if schedule else habit["schedule"]
-                new_start_date = start_date if start_date else habit.get("start_date")
-                edit_habit(match, new_name, new_schedule, new_start_date, username=get_current_user())
-                ai_msg = f"Habit '{match}' updated."
-                chat_history.append({"sender": "user", "text": user_message})
-                chat_history.append({"sender": "ai", "text": ai_msg})
-                threading.Thread(target=lambda: save_chat_history(chat_path, chat_history)).start()
-                return jsonify({"success": True, "status": ai_msg})
-            else:
-                ai_msg = f"No habit found matching '{old_name}' for editing."
-                chat_history.append({"sender": "user", "text": user_message})
-                chat_history.append({"sender": "ai", "text": ai_msg})
-                threading.Thread(target=lambda: save_chat_history(chat_path, chat_history)).start()
-                return jsonify({"success": False, "status": ai_msg})
-        elif action == "add" and name and schedule:
-            add_habit(name, schedule, start_date, username=get_current_user())
-            ai_msg = f"Habit '{name}' added with schedule '{schedule}'."
-            chat_history.append({"sender": "user", "text": user_message})
-            chat_history.append({"sender": "ai", "text": ai_msg})
-            threading.Thread(target=lambda: save_chat_history(chat_path, chat_history)).start()
-            return jsonify({"success": True, "status": ai_msg})
         # If not a planning action, treat as chat
         else:
             user_data_path = get_user_data_path(get_current_user())

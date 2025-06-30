@@ -30,9 +30,9 @@
         </div>
     </form>
     <h2>Current Habits</h2>
-    <table class="table table-bordered">
+    <table class="table table-bordered" id="habits-table">
         <thead><tr><th>Name</th><th>Schedule</th><th>Start Date</th><th>Actions</th></tr></thead>
-        <tbody>
+        <tbody id="habits-tbody">
         {% for h in habits %}
             <tr>
                 <td>{{ h.name }}</td>
@@ -114,7 +114,7 @@
         }).then(r => r.json()).then(data => {
             if (data.status) {
                 appendPlanningMessage('AI', data.status);
-                // Optionally, update the habit list dynamically here if desired
+                refreshHabitsTable();
             } else if (data.response) {
                 appendPlanningMessage('AI', data.response);
             } else {
@@ -125,6 +125,73 @@
             appendPlanningMessage('AI', 'Error getting response.');
             planningStatus.textContent = '';
         });
+
+    // Refresh habits table after AI planning actions
+    function refreshHabitsTable() {
+        fetch('/get_habits').then(r => r.json()).then(data => {
+            const tbody = document.getElementById('habits-tbody');
+            tbody.innerHTML = '';
+            (data.habits || []).forEach(h => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${h.name}</td>
+                    <td>${h.schedule}</td>
+                    <td>${h.start_date}</td>
+                    <td>
+                        <button class="btn btn-warning btn-sm edit-habit" data-habit="${h.name}" data-schedule="${h.schedule}" data-start="${h.start_date}">Edit</button>
+                        <button class="btn btn-danger btn-sm remove-habit" data-habit="${h.name}">Remove</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            // Re-attach event listeners for new buttons
+            document.querySelectorAll('.remove-habit').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const habit = this.getAttribute('data-habit');
+                    if(confirm('Are you sure you want to remove "' + habit + '"?')) {
+                        fetch('/remove_habit', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({habit})
+                        }).then(r => r.json()).then(data => {
+                            if(data.success) refreshHabitsTable();
+                        });
+                    }
+                });
+            });
+            document.querySelectorAll('.edit-habit').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const oldName = this.getAttribute('data-habit');
+                    const oldSchedule = this.getAttribute('data-schedule');
+                    const oldStart = this.getAttribute('data-start');
+                    const name = prompt('Edit habit name:', oldName);
+                    if(!name) return;
+                    const schedule = prompt('Edit schedule (Daily, Bi-daily, Weekly, Bi-weekly, Monthly):', oldSchedule);
+                    if(!schedule) return;
+                    const tempInput = document.createElement('input');
+                    tempInput.type = 'date';
+                    tempInput.value = oldStart;
+                    tempInput.style.position = 'fixed';
+                    tempInput.style.left = '-9999px';
+                    document.body.appendChild(tempInput);
+                    tempInput.focus();
+                    tempInput.click();
+                    tempInput.onchange = function() {
+                        const start_date = tempInput.value;
+                        document.body.removeChild(tempInput);
+                        if(!start_date) return;
+                        fetch('/edit_habit', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({oldName, name, schedule, start_date})
+                        }).then(r => r.json()).then(data => {
+                            if(data.success) refreshHabitsTable();
+                        });
+                    };
+                });
+            });
+        });
+    }
     });
 // Remove habit
     document.querySelectorAll('.remove-habit').forEach(btn => {
