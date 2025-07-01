@@ -14,7 +14,7 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 
 # Copy project files
 COPY ./app ./app
-COPY .env .
+RUN touch .env
 
 # Expose port
 EXPOSE 5000
